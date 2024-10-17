@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model tokens {
+  id                    Int       @id @default(autoincrement())
+  address               String    @unique
+  name                  String
+  symbol                String
+  decimals              Int
+  created_at            DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime? @default(now()) @db.Timestamptz(6)
+  daily_volume          Int
+  tags                  String[]
+  logoURI               String?   @map("logo_uri")
+  tags_birdeye_trending Boolean
+  tags_community        Boolean
+  tags_lst              Boolean
+  tags_moonshot         Boolean
+  tags_pump             Boolean
+  tags_token_2022       Boolean
+  tags_verified         Boolean
+  freeze_authority      String?
+  mint_authority        String?
+  minted_at             DateTime?
+  permanent_delegate    String?
+  extensions            Json?
+}
