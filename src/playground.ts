@@ -1,92 +1,68 @@
-interface Extensions {
-    [key: string]: string;
-  }
-  
-interface Token {
-address: string;
-name: string;
-symbol: string;
-decimals: number;
-logoURI: string | null;
-tags?: string[];
-daily_volume: number | null;
-freeze_authority: string | null;
-mint_authority: string | null;
-permanent_delegate: string | null;
-minted_at: string | null;
-extensions: Extensions | {};
+
+interface TokenInfo {
+    logoURI: string,
+    name: string,
+    symbol: string,
 }
 
-interface TokenWithTags extends Token {
-lst: boolean;
-pump: boolean;
-moonshot: boolean;
-verified: boolean;
-community: boolean;
-birdeye_trending: boolean;
-token_2022: boolean;
-unknown: boolean
-
-[key: string]: boolean | string | number | string[] | Extensions | null | undefined; // index signature -> can accepts any type key
+interface ContractLabel {
+    address: string,
+    name: string,
+    metadata: boolean, //change
 }
 
-const allTokens = [
-    {
-      address: "Hrd2en37VJaDspWFq6miK8w6xTuQRTHNaD2e3tqH2uxr",
-      created_at: "2024-09-18T17:57:50.849585Z",
-      daily_volume: 1000,
-      decimals: 11,
-      extensions: {},
-      freeze_authority: null,
-      logoURI: "https://minechain.gg/wood.png",
-      mint_authority: "DJt9AECGWeHFn77S2qNfwFpJGbyuZLVDqQz171ocXLo3",
-      minted_at: "2024-09-18T15:53:36Z",
-      name: "wood",
-      permanent_delegate: null,
-      symbol: "WOOD",
-      tags: [ "unknown", "lst", 'pump' ],
-    }
-]
+interface BalanceChange {
+    amount: number,
+    symbol: string,
+    name: string,
+    decimals: number,
+    address: string,
+    logoURI: string
+}
 
-function createTokenTags(allTokens: Token[]): TokenWithTags[] {  
-    const tokenWithTags = []
-  
-    const tagNames = [
-      'lst', 
-      'pump', 
-      'moonshot', 
-      'verified', 
-      'community', 
-      'birdeye_trending', 
-      'token_2022'
-    ]
-  
-    for (let i = 0; i < allTokens.length; i++) {
-      const currentToken = allTokens[i] as TokenWithTags
-      const currentTokenTags = currentToken.tags
-      const currentTokenVolume = currentToken.daily_volume
-  
-      if (!currentTokenVolume) {
-        currentToken.daily_volume = 0
+interface MetaData {
+    icon: string;
+}
+
+export interface TransactionHistoryResponse {
+    txHash: string,
+    blockNumber: number,
+    blockTime: string,
+    status: boolean,
+    from: string,
+    to: string,
+    fee: number,
+    mainAction: string,
+    balanceChange: BalanceChange[],
+    contractLabel: {
+      address: string,
+      name: string,
+      metadata: MetaData
+    },
+}
+
+export interface TransactionHistorySwapResponse extends TransactionHistoryResponse {
+  balanceChange: [BalanceChange, BalanceChange, BalanceChange],
+}
+
+export async function getWalletTransactionHistory(
+  walletAddress: string, 
+  limit: number): Promise<TransactionHistoryResponse[] | TransactionHistorySwapResponse[] | null> {
+  const options = {
+      method: 'GET',
+      headers: {
+        accept: 'application/json',
+        'x-chain': 'solana',
+        'X-API-KEY': '73446a3bc8a04ed898f63aab9e56e09e' // TODO add to .env
       }
-  
-      if (currentTokenTags) {
-        for (const tag of tagNames) {
-          currentToken[`tags_${tag}`] = false
-        }
-  
-        for (const tag of tagNames) {
-          if (currentTokenTags.includes(tag)) {
-            currentToken[`tags_${tag}`] = true
-          }     
-        }
-  
-        const { tags, created_at, ...modifiedToken } = currentToken //removes tags & created_at 
-        tokenWithTags.push(modifiedToken)
-      }
-    }
-    return tokenWithTags
+    };
+
+  const historicalTransactions = await (
+      await fetch(`https://public-api.birdeye.so/v1/wallet/tx_list?wallet=${walletAddress}&limit=${limit}`, options)
+  ).json()
+
+  if (historicalTransactions.success) {
+      return historicalTransactions.data.solana
   }
-
-const modifiedToken = createTokenTags(allTokens)
-console.log(modifiedToken)
+  return null
+}
